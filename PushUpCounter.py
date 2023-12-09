@@ -2,7 +2,7 @@ import cv2
 import mediapipe as mp
 import numpy as np
 import PoseModule as pm
-
+import socket
 
 
 cap = cv2.VideoCapture(0)
@@ -11,6 +11,24 @@ count = 0
 direction = 0
 form = 0
 feedback = "Fix Form"
+
+
+# Create a socket object
+server_socket = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+
+# Get the local machine name and port
+host = socket.gethostname()
+port = 1234
+
+# Bind to the port
+server_socket.bind((host, port))
+
+# Listen for incoming connections
+server_socket.listen(5)
+
+# Accept incoming connections
+client_socket, addr = server_socket.accept()
+print("Server listening on port", port)
 
 
 while cap.isOpened():
@@ -37,31 +55,33 @@ while cap.isOpened():
         #Check to ensure right form before starting the program
         if elbow > 140 and shoulder > 30 and hip > 140:
             form = 1
+        else:
+            form = 0
     
         #Check for full range of motion for the pushup
-        if form == 1:
-            if per == 0:
-                if elbow <= 90 and hip > 160:
-                    feedback = "Up"
-                    if direction == 0:
-                        count += 0.5
-                        direction = 1
-                else:
-                    feedback = "Fix Form"
-                    
-            if per == 100:
-                if elbow > 160 and shoulder > 40 and hip > 160:
-                    feedback = "Down"
-                    if direction == 1:
-                        count += 0.5
-                        direction = 0
-                else:
-                    feedback = "Fix Form"
-                        # form = 0
+        # if form == 1:
+        if per == 0:
+            if elbow <= 90 and hip > 160:
+                feedback = "Up"
+                if direction == 0:
+                    count += 0.5
+                    direction = 1
+            else:
+                feedback = "Fix Form"
                 
-                    
-    
-        print(count)
+        if per == 100:
+            if elbow > 160 and shoulder > 40 and hip > 160:
+                feedback = "Down"
+                if direction == 1:
+                    count += 0.5
+                    direction = 0
+            else:
+                feedback = "Fix Form"
+            # form = 0
+                
+          
+        message = f"{form}/{count}"
+        client_socket.send(message.encode('utf-8'))
         
         #Draw Bar
         if form == 1:
@@ -85,6 +105,9 @@ while cap.isOpened():
     cv2.imshow('Pushup counter', img)
     if cv2.waitKey(10) & 0xFF == ord('q'):
         break
-        
+
+print("server closed")
+# Close the connection
+client_socket.close()
 cap.release()
 cv2.destroyAllWindows()

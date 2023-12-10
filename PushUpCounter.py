@@ -2,7 +2,6 @@ import cv2
 import mediapipe as mp
 import numpy as np
 import PoseModule as pm
-import socket
 
 
 cap = cv2.VideoCapture(0)
@@ -13,22 +12,23 @@ form = 0
 feedback = "Fix Form"
 
 
-# Create a socket object
-server_socket = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+def go_up():
+    import requests
+    print("going up")
+    url = "http://0.0.0.0:3000/up"  # Replace with your API endpoint URL
 
-# Get the local machine name and port
-host = socket.gethostname()
-port = 1234
+    # Making a GET request
+    response = requests.get(url)
+    print(response.text)
 
-# Bind to the port
-server_socket.bind((host, port))
+def go_down():
+    import requests
+    print("going down")
+    url = "http://0.0.0.0:3000/down"  # Replace with your API endpoint URL
 
-# Listen for incoming connections
-server_socket.listen(5)
-
-# Accept incoming connections
-client_socket, addr = server_socket.accept()
-print("Server listening on port", port)
+    # Making a GET request
+    response = requests.get(url)
+    print(response.text)
 
 
 while cap.isOpened():
@@ -79,9 +79,12 @@ while cap.isOpened():
                 feedback = "Fix Form"
             # form = 0
                 
-          
-        message = f"{form}/{count}"
-        client_socket.send(message.encode('utf-8'))
+
+        if count%1==count:
+            go_up()
+        else: 
+            go_down()
+        # go_down()
         
         #Draw Bar
         if form == 1:
@@ -107,7 +110,5 @@ while cap.isOpened():
         break
 
 print("server closed")
-# Close the connection
-client_socket.close()
 cap.release()
 cv2.destroyAllWindows()
